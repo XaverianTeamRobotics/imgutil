@@ -37,7 +37,7 @@ jobs:
         uses: actions/upload-pages-artifact@v2
         with:
           name: github-pages-build
-          path: build
+          path: dist
           retention-days: 90
 
   test-deploy:
