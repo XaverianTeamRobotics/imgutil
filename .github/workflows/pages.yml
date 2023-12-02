@@ -1,0 +1,109 @@
+name: Deploy static content to Pages
+
+on:
+  # Run on all pushes to main
+  push:
+    branches:
+      - main
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+  # Run on pull requests to main
+  pull_request:
+    # Note that this specifies the target branch, not the branch that the PR is from
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build website
+        run: npm run build
+
+      - name: Upload Pages build artifact
+        uses: actions/upload-pages-artifact@v2
+        with:
+          name: github-pages-build
+          path: build
+          retention-days: 90
+
+  test-deploy:
+    needs:
+      - build
+    runs-on: ubuntu-latest
+    # Only allow one concurrent test deployment per branch
+    concurrency:
+      group: pages-test-deploy-${{ github.ref }}
+      cancel-in-progress: true
+
+    steps:
+      - name: Download Pages build artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: github-pages-build
+
+      - name: Extract Pages build artifact
+        run: |
+          mkdir pages-build
+          tar -xvf artifact.tar -C pages-build
+
+      - name: Upload build to Cloudflare Pages
+        id: test-deployment
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: xbhs-robotics-docs
+          directory: pages-build
+
+      - name: Add comment with test deployment URL
+        if: ${{ github.event_name == 'pull_request' }}
+        run: >
+          gh pr comment ${{ github.event.number }}
+          --repo ${{ github.repository }}
+          --body "Your docs changes were built successfully!
+          View a preview of them at ${{ steps.test-deployment.outputs.url }}"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  deploy:
+    # Only run deployment from the main branch and not on pull requests
+    if: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
+    needs:
+      - build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    # Only allow one concurrent deployment
+    concurrency:
+      group: pages-deploy
+      cancel-in-progress: false
+
+    steps:
+      - name: Configure Pages
+        uses: actions/configure-pages@v3
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
+        with:
+          artifact_name: github-pages-build
