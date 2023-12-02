@@ -64,13 +64,15 @@ jobs:
         id: test-deployment
         uses: cloudflare/pages-action@v1
         with:
+          # Make sure these secrets are added to both Actions and Dependabot secrets so this always works
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: xbhs-robotics-imgutil
           directory: pages-build
 
       - name: Add comment with test deployment URL
-        if: ${{ github.event_name == 'pull_request' }}
+        # The github token for Dependabot PRs does not have access to post comments
+        if: ${{ github.event_name == 'pull_request' && github.actor != 'dependabot[bot]' }}
         run: >
           gh pr comment ${{ github.event.number }}
           --repo ${{ github.repository }}
