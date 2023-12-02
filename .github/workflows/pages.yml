@@ -57,8 +57,8 @@ jobs:
 
       - name: Extract Pages build artifact
         run: |
-          mkdir pages-build
-          tar -xvf artifact.tar -C pages-build
+          mkdir -p pages-build/imgutil
+          tar -xvf artifact.tar -C pages-build/imgutil
 
       - name: Upload build to Cloudflare Pages
         id: test-deployment
@@ -75,7 +75,7 @@ jobs:
           gh pr comment ${{ github.event.number }}
           --repo ${{ github.repository }}
           --body "Your docs changes were built successfully!
-          View a preview of them at ${{ steps.test-deployment.outputs.url }}"
+          View a preview of them at ${{ steps.test-deployment.outputs.url }}/imgutil"
         env:
           GH_TOKEN: ${{ github.token }}
 
