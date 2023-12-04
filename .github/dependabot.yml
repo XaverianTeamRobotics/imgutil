@@ -19,6 +19,13 @@ updates:
     allow:
       - dependency-name: '*'
         dependency-type: all
+    groups:
+      patches:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
     assignees:
       - MatthewL246
       - michaell4438
