@@ -5,8 +5,9 @@ updates:
     schedule:
       interval: daily
 
-  - package-ecosystem: npm
-    directory: /
-    schedule:
-      interval: weekly
-      day: monday
+# Uncomment this to re-enable automatic Node.js dependency updates
+#  - package-ecosystem: npm
+#    directory: /
+#    schedule:
+#      interval: weekly
+#      day: monday
